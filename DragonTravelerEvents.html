@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dragon Traveler — Event Calculator</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📯</text></svg>">
+<style>/* ============ Dragon Traveler Tracker — dark fantasy theme ============ */
+:root {
+  --bg: #0e1016;
+  --bg-panel: #171a24;
+  --bg-panel-2: #1e2230;
+  --bg-hover: #262b3d;
+  --border: #2e3448;
+  --text: #d9dced;
+  --text-dim: #8b90a8;
+  --gold: #e8b64c;
+  --gold-dim: #a8842f;
+  --accent: #6c8cff;
+  --danger: #e05252;
+  --ok: #58c470;
+
+  /* star tiers */
+  --star-yellow: #fae232;
+  --star-purple: #ef5fa7;
+  --star-red: #ee220d;
+  --star-diamond: #c9d4ff;
+  --star-crown: #fae232;
+
+  /* gear ownership */
+  --gear-none: #ffffff;
+  --gear-ssr: #ff9301;
+  --gear-ur: #c05fef;
+  --gear-unknown: #ee220d;
+
+  /* rarity */
+  --rar-ur: #ff5f8f;
+  --rar-ssrp: #fae232;
+  --rar-ssr: #c05fef;
+  --rar-sr: #6c8cff;
+  --rar-r: #9fb4c8;
+  --rar-n: #8b90a8;
+
+  /* classes */
+  --cls-guardian: #e8b64c;
+  --cls-warrior: #e05252;
+  --cls-assassin: #b16cff;
+  --cls-archer: #58c470;
+  --cls-mage: #56aaff;
+  --cls-priest: #ffd9f2;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
+}
+
+/* ------------------------------------------------------------ topbar */
+#topbar {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 18px;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, #141726, #10121c);
+  border-bottom: 1px solid var(--border);
+}
+.brand { font-size: 17px; font-weight: 700; color: var(--gold); white-space: nowrap; }
+.brand span { color: var(--text-dim); font-weight: 400; }
+#nav { display: flex; gap: 4px; flex: 1; flex-wrap: wrap; }
+#nav button {
+  background: none; border: 1px solid transparent; color: var(--text-dim);
+  padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 14px;
+}
+#nav button:hover { color: var(--text); background: var(--bg-hover); }
+#nav button.active {
+  color: var(--gold); border-color: var(--gold-dim);
+  background: rgba(232, 182, 76, .08);
+}
+.topbar-actions { display: flex; gap: 6px; }
+.topbar-actions button {
+  background: var(--bg-panel-2); color: var(--text-dim);
+  border: 1px solid var(--border); border-radius: 6px;
+  padding: 5px 10px; cursor: pointer; font-size: 12.5px;
+}
+.topbar-actions button:hover { color: var(--text); background: var(--bg-hover); }
+.topbar-actions button.danger:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
+
+#view { padding: 16px 18px 60px; max-width: 1700px; margin: 0 auto; }
+
+h2.view-title { color: var(--gold); margin: 4px 0 14px; font-size: 20px; }
+h3.section-title { color: var(--text); margin: 22px 0 10px; font-size: 16px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.hint { color: var(--text-dim); font-size: 12.5px; margin: 6px 0 12px; }
+
+/* ------------------------------------------------------------ controls */
+.controls {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  margin-bottom: 12px;
+}
+.controls input[type=text], .controls select, .controls input[type=search] {
+  background: var(--bg-panel-2); color: var(--text);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px;
+  font-size: 13.5px;
+}
+.controls label.chk { color: var(--text-dim); display: flex; gap: 5px; align-items: center; font-size: 13px; cursor: pointer; }
+
+/* ------------------------------------------------------------ tables */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+table.dt {
+  border-collapse: collapse; width: 100%; font-size: 13.5px;
+  background: var(--bg-panel);
+}
+table.dt th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--bg-panel-2); color: var(--text-dim);
+  text-align: left; padding: 8px 10px; white-space: nowrap;
+  border-bottom: 2px solid var(--border);
+  font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+}
+table.dt th.sortable { cursor: pointer; }
+table.dt th.sortable:hover { color: var(--gold); }
+table.dt td { padding: 6px 10px; border-bottom: 1px solid #232839; white-space: nowrap; }
+table.dt tbody tr:hover { background: var(--bg-hover); }
+table.dt td.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.dt td.center, table.dt th.center { text-align: center; }
+
+.portrait-sm {
+  width: 34px; height: 34px; border-radius: 6px; object-fit: cover;
+  background: var(--bg-panel-2); border: 1px solid var(--border);
+  display: block;
+}
+.portrait-fallback {
+  width: 34px; height: 34px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-panel-2); border: 1px solid var(--border);
+  color: var(--text-dim); font-weight: 700; font-size: 13px;
+}
+.char-name { color: var(--text); font-weight: 600; cursor: pointer; }
+.char-name:hover { color: var(--gold); text-decoration: underline; }
+.unreleased-tag {
+  font-size: 10px; color: var(--star-red); border: 1px solid var(--star-red);
+  padding: 0 4px; border-radius: 4px; margin-left: 6px; vertical-align: 1px;
+}
+
+.rarity { font-weight: 700; }
+.rarity.UR, .rarity.SSREX { color: var(--rar-ur); }
+.rarity.SSRp { color: var(--rar-ssrp); }
+.rarity.SSR { color: var(--rar-ssr); }
+.rarity.SR { color: var(--rar-sr); }
+.rarity.R { color: var(--rar-r); }
+.rarity.N { color: var(--rar-n); }
+
+.cls { font-weight: 600; }
+.cls.Guardian { color: var(--cls-guardian); }
+.cls.Warrior { color: var(--cls-warrior); }
+.cls.Assassin { color: var(--cls-assassin); }
+.cls.Archer { color: var(--cls-archer); }
+.cls.Mage { color: var(--cls-mage); }
+.cls.Priest { color: var(--cls-priest); }
+
+.faction { color: var(--text-dim); font-size: 12.5px; }
+.faction .sec { opacity: .65; }
+
+/* stars */
+.stars { font-size: 14px; letter-spacing: 1px; }
+.stars.yellow { color: var(--star-yellow); }
+.stars.purple { color: var(--star-purple); }
+.stars.red { color: var(--star-red); }
+.stars.diamond, .stars.crown, .stars.none { color: var(--text); }
+.next-hint { font-size: 11px; color: var(--text-dim); }
+.next-hint.ready { color: var(--ok); font-weight: 600; }
+
+/* copies stepper */
+.stepper { display: inline-flex; align-items: center; gap: 2px; }
+.stepper button {
+  width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--border);
+  background: var(--bg-panel-2); color: var(--text-dim); cursor: pointer;
+  font-size: 12px; line-height: 1; padding: 0;
+}
+.stepper button:hover { color: var(--gold); background: var(--bg-hover); }
+.stepper input {
+  width: 42px; text-align: center; background: var(--bg-panel-2);
+  border: 1px solid var(--border); color: var(--text); border-radius: 4px;
+  padding: 2px 0; font-size: 13px;
+}
+select.inline {
+  background: var(--bg-panel-2); color: var(--text); border: 1px solid var(--border);
+  border-radius: 4px; padding: 2px 4px; font-size: 12.5px; max-width: 130px;
+}
+
+/* gear status pills */
+.gear-pill {
+  display: inline-block; padding: 1px 7px; border-radius: 10px;
+  font-size: 11.5px; cursor: pointer; border: 1px solid var(--border);
+  background: var(--bg-panel-2); user-select: none; max-width: 120px;
+  overflow: hidden; text-overflow: ellipsis; vertical-align: middle;
+}
+.gear-pill.none { color: var(--gear-none); }
+.gear-pill.ssr { color: var(--gear-ssr); border-color: var(--gear-ssr); }
+.gear-pill.ur { color: var(--gear-ur); border-color: var(--gear-ur); }
+.gear-pill.unknown { color: var(--gear-unknown); border-color: var(--gear-unknown); }
+.gear-pill:hover { background: var(--bg-hover); }
+
+/* legends */
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin: 8px 0 14px; font-size: 12px; color: var(--text-dim); }
+.legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* ------------------------------------------------------------ cards */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.card {
+  background: var(--bg-panel); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px;
+}
+.card h4 { margin: 0 0 10px; color: var(--gold); font-size: 15px; }
+
+/* filter chips */
+.chip-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.chip-label {
+  width: 56px; font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-dim); flex-shrink: 0;
+}
+.chip {
+  background: var(--bg-panel-2); border: 1px solid var(--border); color: var(--text-dim);
+  border-radius: 14px; padding: 3px 12px; cursor: pointer; font-size: 12.5px;
+}
+.chip:hover { color: var(--text); border-color: var(--gold-dim); }
+.chip.on {
+  color: var(--gold); border-color: var(--gold-dim);
+  background: rgba(232, 182, 76, .12);
+}
+.mode-toggle {
+  display: inline-flex; border: 1px solid var(--border); border-radius: 6px;
+  overflow: hidden; margin-left: 6px;
+}
+.mode-toggle button {
+  background: var(--bg-panel-2); border: none; color: var(--text-dim);
+  padding: 3px 10px; cursor: pointer; font-size: 11.5px;
+}
+.mode-toggle button + button { border-left: 1px solid var(--border); }
+.mode-toggle button.on { color: var(--gold); background: rgba(232, 182, 76, .12); }
+
+/* encyclopedia grid */
+.ency-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.ency-card {
+  background: var(--bg-panel); border: 1px solid var(--border); border-radius: 10px;
+  overflow: hidden; cursor: pointer; transition: transform .08s, border-color .08s;
+}
+.ency-card:hover { transform: translateY(-2px); border-color: var(--gold-dim); }
+.ency-card img, .ency-card .noimg {
+  width: 100%; aspect-ratio: 1/1; object-fit: cover; object-position: top;
+  display: block; background: var(--bg-panel-2);
+}
+.ency-card .noimg { display: flex; align-items: center; justify-content: center; color: var(--text-dim); font-size: 34px; }
+.ency-card .meta { padding: 8px 10px; }
+.ency-card .meta .nm { font-weight: 700; font-size: 13.5px; }
+.ency-card .meta .sub { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+
+/* ------------------------------------------------------------ modal */
+#modal-root:empty { display: none; }
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(5, 6, 10, .75); z-index: 100;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 4vh 16px; overflow-y: auto;
+}
+.modal {
+  background: var(--bg-panel); border: 1px solid var(--gold-dim);
+  border-radius: 12px; max-width: 860px; width: 100%; padding: 20px 24px;
+  position: relative; margin-bottom: 6vh;
+}
+.modal .close {
+  position: absolute; top: 10px; right: 12px; background: none; border: none;
+  color: var(--text-dim); font-size: 22px; cursor: pointer;
+}
+.modal .close:hover { color: var(--danger); }
+.char-head { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+.char-head img {
+  width: 150px; border-radius: 10px; border: 1px solid var(--border);
+  background: var(--bg-panel-2);
+}
+.char-head .info { flex: 1; min-width: 240px; }
+.char-head h3 { margin: 0; font-size: 22px; color: var(--gold); }
+.char-head .title { color: var(--text-dim); font-style: italic; margin: 2px 0 8px; }
+.char-head .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.badge {
+  font-size: 11.5px; padding: 2px 8px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg-panel-2); color: var(--text-dim);
+}
+.quote { color: var(--gold); font-style: italic; margin: 8px 0; }
+.skill { background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+.skill .sk-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.skill .sk-name { font-weight: 700; color: var(--accent); }
+.skill .sk-type { color: var(--text-dim); font-size: 12px; }
+.skill .sk-desc { font-size: 13px; color: var(--text); white-space: pre-wrap; }
+.talent-lvl { margin-bottom: 6px; font-size: 13px; }
+.talent-lvl b { color: var(--gold); }
+.lore { color: var(--text-dim); font-size: 13px; white-space: pre-wrap; }
+details.block { margin: 10px 0; }
+details.block summary { cursor: pointer; color: var(--gold); font-weight: 600; margin-bottom: 6px; }
+
+/* tracking strip inside modal */
+.track-strip {
+  display: flex; gap: 16px; flex-wrap: wrap; align-items: center;
+  background: var(--bg-panel-2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; margin: 12px 0;
+}
+.track-strip .fld { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-dim); }
+
+/* ------------------------------------------------------------ squads */
+.squad-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.squad-tabs button {
+  background: var(--bg-panel-2); border: 1px solid var(--border); color: var(--text-dim);
+  border-radius: 6px; padding: 6px 14px; cursor: pointer;
+}
+.squad-tabs button.active { color: var(--gold); border-color: var(--gold-dim); background: rgba(232,182,76,.08); }
+.builder-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.builder-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .builder-layout { grid-template-columns: 1fr; } .pool-panel { position: static !important; } }
+
+.team-card { margin-bottom: 14px; border-width: 1px; }
+.team-card.active { border-color: var(--gold-dim); box-shadow: 0 0 0 1px var(--gold-dim); }
+.team-head { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+.team-head .faction-sel { min-width: 170px; }
+.team-head .spacer { flex: 1; }
+.dup { color: var(--danger); font-size: 11px; }
+.icon-btn {
+  background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 14px; padding: 2px;
+}
+.icon-btn:hover { color: var(--danger); }
+.add-row-btn, .add-team-btn {
+  background: var(--bg-panel-2); border: 1px dashed var(--border); color: var(--text-dim);
+  border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 12.5px;
+}
+.add-row-btn:hover, .add-team-btn:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* formation grid */
+.formation { display: flex; flex-direction: column; gap: 6px; }
+.frow { display: grid; grid-template-columns: 52px repeat(3, minmax(78px, 110px)); gap: 6px; align-items: stretch; }
+.frow-label {
+  writing-mode: horizontal-tb; display: flex; align-items: center; justify-content: center;
+  font-size: 10px; letter-spacing: .12em; color: var(--text-dim);
+  border-right: 2px solid var(--border);
+}
+.fslot {
+  position: relative; border-radius: 8px; min-height: 86px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: 6px 4px 4px; text-align: center;
+}
+.fslot.empty {
+  border: 1.5px dashed var(--border); color: var(--text-dim); font-size: 20px;
+  cursor: pointer; background: rgba(255,255,255,.015);
+}
+.fslot.empty:hover { border-color: var(--gold-dim); color: var(--gold); }
+.fslot.empty.target { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+.fslot.filled {
+  border: 1px solid var(--border); background: var(--bg-panel-2); cursor: grab;
+}
+.fslot.filled:hover { border-color: var(--gold-dim); }
+.fslot.filled.off { border-color: var(--danger); }
+.fslot-name { font-size: 11px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fslot-stars { font-size: 10px; line-height: 1; }
+.fslot-stars .stars { font-size: 10px; letter-spacing: 0; }
+.fslot-x {
+  position: absolute; top: 2px; right: 2px; background: none; border: none;
+  color: var(--text-dim); font-size: 11px; cursor: pointer; padding: 2px;
+  opacity: 0; transition: opacity .1s;
+}
+.fslot:hover .fslot-x, .bench-chip:hover .fslot-x { opacity: 1; }
+.fslot-x:hover { color: var(--danger); }
+
+.portrait-slot { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--bg-panel); }
+.portrait-chip { width: 22px; height: 22px; border-radius: 4px; object-fit: cover; }
+.portrait-pool { width: 52px; height: 52px; border-radius: 6px; object-fit: cover; background: var(--bg-panel-2); }
+.portrait-fallback.portrait-slot { width: 40px; height: 40px; }
+.portrait-fallback.portrait-chip { width: 22px; height: 22px; font-size: 9px; }
+.portrait-fallback.portrait-pool { width: 52px; height: 52px; }
+
+/* bench */
+.bench-zone {
+  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+  border: 1px dashed var(--border); border-radius: 8px;
+  padding: 6px 8px; margin-top: 8px; min-height: 38px;
+}
+.bench-label { font-size: 10px; letter-spacing: .12em; color: var(--text-dim); margin-right: 4px; }
+.bench-hint { font-size: 11px; color: var(--text-dim); opacity: .6; }
+.bench-chip {
+  position: relative; display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 14px;
+  padding: 2px 20px 2px 3px; font-size: 12px; cursor: grab;
+}
+.bench-chip:hover { border-color: var(--gold-dim); }
+.bench-chip .fslot-x { top: 50%; transform: translateY(-50%); }
+
+/* wyrmspells */
+.ws-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; padding-top: 8px; border-top: 1px solid #232839; }
+.ws-slot { display: flex; flex-direction: column; gap: 2px; font-size: 10.5px; color: var(--text-dim); letter-spacing: .06em; }
+.ws-slot select { max-width: 160px; }
+
+/* character pool */
+.pool-panel {
+  position: sticky; top: 60px; background: var(--bg-panel);
+  border: 1px solid var(--border); border-radius: 10px; padding: 10px;
+  max-height: calc(100vh - 80px); display: flex; flex-direction: column;
+}
+.pool-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+  gap: 6px; overflow-y: auto;
+}
+.pool-card {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 3px 4px;
+  cursor: grab; background: var(--bg-panel-2); text-align: center;
+}
+.pool-card:hover { border-color: var(--gold-dim); transform: translateY(-1px); }
+.pool-card.used { opacity: .35; }
+.pool-name { font-size: 10.5px; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pool-stars .stars { font-size: 9px; letter-spacing: 0; }
+
+/* gear tables: keep the set/item name columns visible while scrolling right */
+table.dt.gear-sticky th:nth-child(1), table.dt.gear-sticky td:nth-child(1) {
+  position: sticky; left: 0; z-index: 3;
+  background: var(--bg-panel);
+  min-width: 118px; max-width: 118px;
+  overflow: hidden; text-overflow: ellipsis;
+}
+table.dt.gear-sticky th:nth-child(2), table.dt.gear-sticky td:nth-child(2) {
+  position: sticky; left: 118px; z-index: 3;
+  background: var(--bg-panel);
+  min-width: 165px; max-width: 165px;
+  overflow: hidden; text-overflow: ellipsis;
+  box-shadow: 2px 0 0 var(--border);
+}
+/* only the FIRST header row's first two cells are the sticky corner —
+   deeper header rows (the 1T/2T/UR/... group cells) must scroll normally */
+table.dt.gear-sticky th:nth-child(1), table.dt.gear-sticky th:nth-child(2) {
+  position: static; min-width: 0; max-width: none;
+  background: var(--bg-panel-2); box-shadow: none;
+}
+table.dt.gear-sticky thead tr:first-child th:nth-child(1) {
+  position: sticky; left: 0; z-index: 5;
+  background: var(--bg-panel-2);
+  min-width: 118px; max-width: 118px;
+}
+table.dt.gear-sticky thead tr:first-child th:nth-child(2) {
+  position: sticky; left: 118px; z-index: 5;
+  background: var(--bg-panel-2);
+  min-width: 165px; max-width: 165px;
+  box-shadow: 2px 0 0 var(--border);
+}
+table.dt.gear-sticky tbody tr:hover td:nth-child(1),
+table.dt.gear-sticky tbody tr:hover td:nth-child(2) {
+  background: var(--bg-hover);
+}
+
+/* gear count cells */
+input.cnt {
+  width: 46px; text-align: center; background: var(--bg-panel-2);
+  border: 1px solid var(--border); color: var(--text); border-radius: 4px;
+  padding: 2px 0; font-size: 13px;
+}
+td.need { font-variant-numeric: tabular-nums; text-align: center; }
+td.need.short { color: var(--danger); font-weight: 700; }
+td.need.met { color: var(--ok); }
+td.need.zero { color: var(--text-dim); opacity: .4; }
+.slot-head { background: rgba(232,182,76,.06) !important; color: var(--gold) !important; }
+
+/* food */
+.food-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+.food-row { display: flex; gap: 8px; align-items: center; margin-bottom: 4px; }
+.food-row input.amount { width: 56px; }
+.food-row input.who {
+  flex: 1; background: var(--bg-panel-2); border: 1px solid var(--border);
+  color: var(--text); border-radius: 5px; padding: 4px 8px; font-size: 13px;
+}
+.food-totals { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 8px; font-size: 13px; color: var(--text-dim); }
+.food-totals b { color: var(--text); }
+.avail-line { display: flex; gap: 10px; align-items: center; margin: 4px 0; font-size: 13px; color: var(--text-dim); }
+
+/* gear icons in tracking tables */
+.gear-ico {
+  width: 22px; height: 22px; border-radius: 4px; object-fit: contain;
+  background: var(--bg-panel); vertical-align: middle;
+}
+.ico-strip { display: inline-flex; gap: 2px; margin-right: 6px; vertical-align: middle; }
+
+/* section-options form */
+.form-col { display: flex; flex-direction: column; gap: 10px; }
+.fld-lbl { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--text-dim); }
+.fld-lbl input[type=text] {
+  background: var(--bg-panel-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 7px 10px; font-size: 14px;
+}
+.form-col .chk { color: var(--text); font-size: 13.5px; display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.danger-btn:hover { color: #fff !important; background: var(--danger) !important; border-color: var(--danger) !important; }
+.pool-card.locked { opacity: .25; filter: grayscale(.8); }
+
+/* loadout builder */
+.lo-card { margin-bottom: 12px; }
+.gslot-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.gslot {
+  position: relative; border-radius: 8px; min-height: 92px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; padding: 6px 4px; text-align: center; font-size: 18px; color: var(--text-dim);
+}
+.gslot .gslot-lbl {
+  position: absolute; top: 4px; left: 6px; font-size: 9px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-dim); opacity: .8;
+}
+.gslot.empty { border: 1.5px dashed var(--border); cursor: pointer; background: rgba(255,255,255,.015); }
+.gslot.empty:not(.ro):hover { border-color: var(--gold-dim); color: var(--gold); }
+.gslot.filled { border: 1px solid var(--border); background: var(--bg-panel-2); cursor: grab; }
+.gslot.filled:not(.ro):hover { border-color: var(--gold-dim); }
+.gslot.target { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); color: var(--gold); }
+.gslot.ro { cursor: default; opacity: .95; }
+.gslot img { width: 44px; height: 44px; object-fit: contain; }
+.gslot-name {
+  font-size: 10.5px; font-weight: 600; color: var(--text); line-height: 1.15;
+  max-width: 100%; overflow: hidden; display: -webkit-box;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+.set-summary { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* dragons */
+.dragon-head { display: flex; gap: 14px; align-items: flex-start; }
+.dragon-portrait {
+  width: 96px; height: 96px; object-fit: contain; border-radius: 10px;
+  background: var(--bg-panel-2); border: 1px solid var(--border); cursor: pointer;
+  flex-shrink: 0;
+}
+.dragon-portrait:hover { border-color: var(--gold-dim); }
+.phase-row { display: flex; gap: 6px; margin-bottom: 8px; }
+.dstar-row { display: flex; gap: 4px; font-size: 26px; line-height: 1; }
+.dstar { color: #2a2f42; cursor: pointer; transition: transform .08s; }
+.dstar:hover { transform: scale(1.15); }
+.dstar.filled { color: var(--star-col); text-shadow: 0 0 6px var(--star-col); }
+.dstar.working { color: #2a2f42; -webkit-text-stroke: 1px var(--star-col); }
+.substar-dots { display: inline-flex; gap: 4px; }
+.sdot {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--bg-panel-2);
+}
+.sdot.on { background: var(--star-col); border-color: var(--star-col); box-shadow: 0 0 5px var(--star-col); }
+.cost-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.cost-grid > div {
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 8px 10px; font-size: 12px; color: var(--text-dim);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.cost-grid b { font-size: 17px; color: var(--gold); }
+
+/* nest grid */
+.nest-wrap { overflow-x: auto; }
+.nest-grid {
+  display: grid; grid-template-columns: repeat(8, 42px); grid-template-rows: repeat(8, 42px);
+  gap: 2px; width: max-content; position: relative;
+}
+.ntile { border-radius: 4px; }
+.ntile.open { background: var(--bg-panel-2); border: 1px solid var(--border); cursor: pointer; }
+.ntile.open:hover { border-color: var(--gold-dim); background: var(--bg-hover); }
+.ntile.locked {
+  background: repeating-linear-gradient(45deg, #12141d, #12141d 5px, #171a24 5px, #171a24 10px);
+  border: 1px solid #1b1e2b;
+}
+.nart {
+  background: rgba(232, 182, 76, .10); border: 1.5px solid var(--gold-dim);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; z-index: 2; padding: 2px;
+}
+.nart:hover { border-color: var(--danger); background: rgba(224, 82, 82, .12); }
+.nart img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.pool-card.picked { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold); }
+
+/* artifact levels */
+.alvl-head { display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.alvl-head > img {
+  width: 56px; height: 56px; object-fit: contain; border-radius: 8px;
+  background: var(--bg-panel-2); border: 1px solid var(--border); cursor: pointer;
+  flex-shrink: 0;
+}
+.alvl-head > img:hover { border-color: var(--gold-dim); }
+.treasure-row { border-top: 1px solid #232839; padding: 8px 0 6px; }
+.treasure-head { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.treasure-head b { min-width: 160px; }
+#alvl-list { max-width: 900px; }
+
+/* summoning events */
+.ev-inputs { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.ev-inputs input {
+  background: var(--bg-panel-2); border: 1px solid var(--border); color: var(--text);
+  border-radius: 6px; padding: 6px 10px; font-size: 14px; width: 120px;
+}
+.ev-verdict {
+  font-size: 16px; font-weight: 700; color: var(--ok);
+  display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap;
+}
+.ev-verdict.none { color: var(--danger); }
+
+/* team card dragon chip */
+.dragon-chip {
+  display: inline-flex; gap: 8px; align-items: center;
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 4px 10px 4px 4px; cursor: pointer; font-size: 12px;
+}
+.dragon-chip:hover { border-color: var(--gold-dim); }
+.dragon-chip img { width: 34px; height: 34px; object-fit: contain; border-radius: 6px; background: var(--bg-panel); }
+
+/* loadout substats */
+.sub-cell {
+  display: flex; flex-direction: column; gap: 4px; align-items: stretch;
+  min-height: 30px;
+}
+.sub-chip {
+  position: relative; display: inline-flex; gap: 4px; align-items: center;
+  border: 1px solid; border-radius: 10px; padding: 2px 20px 2px 8px;
+  font-size: 10.5px; line-height: 1.3; background: var(--bg-panel-2);
+  white-space: nowrap; overflow: hidden;
+}
+.sub-chip select.sub-rar, .sub-chip select.sub-stat {
+  background: var(--bg-panel); color: inherit; border: 1px solid var(--border);
+  border-radius: 4px; font-size: 10px; padding: 0 2px;
+  max-width: 92px;
+}
+.sub-chip .fslot-x { top: 50%; transform: translateY(-50%); }
+select.sub-add {
+  background: var(--bg-panel-2); color: var(--text-dim); border: 1px dashed var(--border);
+  border-radius: 6px; font-size: 10.5px; padding: 3px 4px; cursor: pointer;
+}
+select.sub-add:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+/* artifact ordering */
+.order-btns { display: flex; flex-direction: column; gap: 0; flex-shrink: 0; }
+.order-btns .icon-btn { font-size: 11px; line-height: 1; padding: 3px 4px; }
+.order-btns .icon-btn:hover { color: var(--gold); }
+
+/* locked artifacts / treasures */
+.locked-art .alvl-head > img { filter: grayscale(1); opacity: .55; }
+.treasure-row.locked { opacity: .55; }
+.stepper.off { opacity: .4; }
+.stepper button:disabled, .stepper input:disabled { cursor: not-allowed; }
+
+/* codex pill + star picker */
+.codex-pill {
+  background: var(--bg-panel-2); border: 1px solid var(--border); border-radius: 6px;
+  padding: 2px 8px; cursor: pointer; font-size: 13px; line-height: 1.3;
+}
+.codex-pill:hover { border-color: var(--gold-dim); }
+.star-menu {
+  position: absolute; z-index: 300; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 2px; background: var(--bg-panel-2); border: 1px solid var(--gold-dim);
+  border-radius: 8px; padding: 6px; box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
+  max-height: 320px; overflow-y: auto; width: 180px;
+}
+.star-menu button {
+  background: none; border: 1px solid transparent; border-radius: 5px;
+  padding: 3px 6px; cursor: pointer; text-align: left; font-size: 13px;
+  color: var(--text);
+}
+.star-menu button:hover { background: var(--bg-hover); border-color: var(--border); }
+.star-menu button.on { border-color: var(--gold); background: rgba(232, 182, 76, .1); }
+
+/* gear need tooltip */
+#gear-tip {
+  position: absolute; z-index: 300; min-width: 190px; max-width: 250px;
+  background: var(--bg-panel-2); border: 1px solid var(--gold-dim);
+  border-radius: 8px; padding: 8px 10px; font-size: 12.5px;
+  pointer-events: none; opacity: 0; transition: opacity .1s;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .5);
+}
+#gear-tip.show { opacity: 1; }
+#gear-tip .tip-title {
+  color: var(--gold); font-weight: 700; margin-bottom: 6px; font-size: 12px;
+}
+#gear-tip .tip-row { display: flex; gap: 7px; align-items: center; padding: 2px 0; }
+#gear-tip .tip-foot { color: var(--text-dim); margin-top: 6px; font-size: 11.5px; }
+
+/* toast */
+#toast {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  background: var(--bg-panel-2); color: var(--text); border: 1px solid var(--gold-dim);
+  border-radius: 8px; padding: 9px 18px; font-size: 13.5px; z-index: 200;
+  opacity: 0; pointer-events: none; transition: opacity .25s;
+}
+#toast.show { opacity: 1; }
+
+@media (max-width: 900px) {
+  .member-row { grid-template-columns: 32px 1fr 70px 60px 26px; }
+  .member-row .hide-sm { display: none; }
+}
+</style>
+</head>
+<body>
+<header id="topbar"><div class="brand">🐉 Dragon Traveler <span>Event Calculator</span></div></header>
+<main id="view"></main>
+<div id="toast"></div>
+<script>
+
+const store = { state: { events: {} } };
+try { store.state.events = JSON.parse(localStorage.getItem("dt-events") || "{}"); } catch (e) {}
+async function saveEvents(data) {
+  store.state.events = data;
+  try { localStorage.setItem("dt-events", JSON.stringify(data)); } catch (e) {}
+}
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (m) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[m]));
+}
+let _toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("show"), 1800);
+}
+function debounce(fn, ms = 400) {
+  let t = null;
+  return (...args) => {
+    clearTimeout(t);
+    t = setTimeout(() => fn(...args), ms);
+  };
+}
+
+// Weekly summoning events: three calculators (Treasure Hunt, Invocation,
+// Howlkin Refinement). Each round needs 2700 points, up to 5 rounds; hitting
+// 200 / 500 / 1000 points within a round grants free fate-type summons.
+// Enter what you own, pick a strategy, and get a round-by-round spending
+// guide plus how far your stock reaches.
+
+
+const ROUND_POINTS = 2700;
+const MAX_ROUNDS = 5;
+const MILESTONES = [200, 500, 1000];
+
+const EVENTS = [
+  {
+    id: "treasure", name: "Treasure Hunt", icon: "📯",
+    currencies: [
+      { key: "golden", label: "Golden Horns", value: 10 },
+      { key: "fate", label: "Fate Horns", value: 15, isFate: true },
+    ],
+    freebie: 10,
+    freebieLabel: "10 Fate Horns",
+  },
+  {
+    id: "invocation", name: "Invocation", icon: "💎",
+    currencies: [
+      { key: "legacy", label: "Legacy Dragon Crystals", value: 3 },
+      { key: "fated", label: "Fated Dragon Crystals", value: 5, isFate: true },
+    ],
+    freebie: 30,
+    freebieLabel: "30 Fated Crystals",
+  },
+  {
+    id: "howlkin", name: "Howlkin Refinement", icon: "🧪",
+    currencies: [
+      { key: "mercury", label: "Mercury Potions", value: 2 },
+      { key: "soul", label: "Soul Elixirs", value: 10 },
+      { key: "fate", label: "Fate Potions", value: 15, isFate: true },
+    ],
+    freebie: 10,
+    freebieLabel: "10 Fate Potions",
+  },
+];
+
+function eventState() {
+  const s = store.state.events || {};
+  const out = {};
+  for (const ev of EVENTS) {
+    out[ev.id] = {
+      owned: { ...(s[ev.id]?.owned || {}) },
+      fateFirst: s[ev.id]?.fateFirst ?? false,
+      startPoints: s[ev.id]?.startPoints ?? 0,
+    };
+    for (const c of ev.currencies) out[ev.id].owned[c.key] ||= 0;
+  }
+  return out;
+}
+
+// Simulates the event round by round. Free fate summons are always spent
+// before your own fate stock (they cost you nothing); the strategy decides
+// whether fate is spent before or after the ordinary currencies.
+function simulate(ev, owned, fateFirst, startPoints = 0) {
+  let pool = { ...owned };
+  const fate = ev.currencies.find((c) => c.isFate);
+  const others = ev.currencies.filter((c) => !c.isFate).sort((a, b) => b.value - a.value);
+  let freePool = 0, freeGained = 0;
+  const rounds = [];
+  let failed = null;
+
+  for (let r = 0; r < MAX_ROUNDS && !failed; r++) {
+    // Each round runs on a TRIAL copy — if 2700 isn't reachable you
+    // wouldn't play the round at all, so nothing gets spent and the
+    // leftovers keep your full remaining stock.
+    const trialPool = { ...pool };
+    let trialFree = freePool, trialFreeGained = 0;
+
+    // the current round may already be under way: start from the entered
+    // points, and don't re-grant milestone rewards already collected in
+    // game (those free summons are part of the stock you typed in)
+    let points = r === 0 ? Math.max(0, startPoints) : 0;
+    let freeSpent = 0;
+    const spent = {};
+    const granted = new Set(r === 0 ? MILESTONES.filter((m) => points >= m) : []);
+    const order = fateFirst
+      ? ["__free__", fate.key, ...others.map((c) => c.key)]
+      : [...others.map((c) => c.key), "__free__", fate.key];
+    const valueOf = (k) => k === "__free__" ? fate.value
+      : ev.currencies.find((c) => c.key === k).value;
+
+    while (points < ROUND_POINTS) {
+      let pick = null;
+      for (const k of order) {
+        const missing = ROUND_POINTS - points;
+        const avail = k === "__free__" ? trialFree : trialPool[k];
+        if (avail <= 0) continue;
+        pick = k;
+        // if a cheaper later option still covers the remainder, prefer it
+        // to avoid overshooting with a big summon on the last step
+        for (const k2 of order) {
+          const avail2 = k2 === "__free__" ? trialFree : trialPool[k2];
+          if (avail2 > 0 && valueOf(k2) < valueOf(pick) && valueOf(k2) >= missing) pick = k2;
+        }
+        break;
+      }
+      if (!pick) break;
+      if (pick === "__free__") { trialFree--; freeSpent++; }
+      else { trialPool[pick]--; spent[pick] = (spent[pick] || 0) + 1; }
+      points += valueOf(pick);
+      for (const m of MILESTONES) {
+        if (points >= m && !granted.has(m)) {
+          granted.add(m);
+          trialFree += ev.freebie;
+          trialFreeGained += ev.freebie;
+        }
+      }
+    }
+    if (points >= ROUND_POINTS) {
+      // round is completable — commit the trial spending
+      pool = trialPool;
+      freePool = trialFree;
+      freeGained += trialFreeGained;
+      rounds.push({ spent, freeSpent, points });
+    } else {
+      // not completable — don't spend anything, just report the gap
+      failed = { round: r + 1, points, missing: ROUND_POINTS - points, spent, freeSpent };
+    }
+  }
+  return { rounds, failed, leftover: pool, freeLeft: freePool, freeGained };
+}
+
+function renderEvents(el) {
+  const state = eventState();
+
+  function eventCard(ev) {
+    const st = state[ev.id];
+    const inputs = ev.currencies.map((c) => `
+      <label class="fld-lbl" style="min-width:130px">${esc(c.label)} <span class="hint" style="margin:0">(${c.value} pts)</span>
+        <input type="number" min="0" class="ev-input" value="${st.owned[c.key]}"
+          data-ev="${ev.id}" data-cur="${c.key}">
+      </label>`).join("");
+
+    return `<div class="card lo-card" data-ev-card="${ev.id}">
+      <div class="team-head"><b style="font-size:16px">${ev.icon} ${esc(ev.name)}</b>
+        <span class="spacer"></span>
+        <span class="mode-toggle">
+          <button class="${st.fateFirst ? "on" : ""}" data-pref="${ev.id}:1" title="Burn fate summons first">spend fate first</button><button class="${st.fateFirst ? "" : "on"}" data-pref="${ev.id}:0" title="Use the ordinary summons first and keep fate summons unless needed">save fate</button>
+        </span>
+      </div>
+      <div class="ev-inputs">${inputs}
+        <label class="fld-lbl" style="min-width:130px">Points already earned <span class="hint" style="margin:0">(this round)</span>
+          <input type="number" min="0" max="${ROUND_POINTS - 1}" class="ev-start" value="${st.startPoints}"
+            data-ev="${ev.id}">
+        </label>
+      </div>
+      <div class="ev-result" data-ev-result="${ev.id}"></div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <h2 class="view-title">Summoning Events</h2>
+    <p class="hint">Weekly events: each round needs <b>${ROUND_POINTS.toLocaleString()}</b> points, up to ${MAX_ROUNDS} rounds. Reaching 200 / 500 / 1000 points within a round grants free fate summons (assumed at <i>each</i> milestone, every round). Enter your stock — the guide updates as you type and is saved automatically.</p>
+    ${EVENTS.map(eventCard).join("")}`;
+
+  function paintResult(ev) {
+    const st = state[ev.id];
+    const box = el.querySelector(`[data-ev-result="${ev.id}"]`);
+    const res = simulate(ev, st.owned, st.fateFirst, st.startPoints);
+    const label = (k) => k === "__free__" ? "free fate"
+      : ev.currencies.find((c) => c.key === k)?.label || k;
+
+    const roundRows = res.rounds.map((r, i) => {
+      const parts = ev.currencies
+        .filter((c) => r.spent[c.key])
+        .map((c) => `${r.spent[c.key]}× ${esc(c.label)}`);
+      if (r.freeSpent) parts.push(`${r.freeSpent}× free fate`);
+      if (i === 0 && st.startPoints > 0)
+        parts.unshift(`<span class="hint" style="margin:0">${st.startPoints.toLocaleString()} pts head start</span>`);
+      return `<tr><td>Round ${i + 1}</td><td>${parts.join(" + ") || "—"}</td>
+        <td class="num">${r.points.toLocaleString()}</td></tr>`;
+    }).join("");
+
+    const leftovers = ev.currencies
+      .map((c) => `${res.leftover[c.key] || 0}× ${esc(c.label)}`)
+      .join(" · ") + (res.freeLeft ? ` · ${res.freeLeft}× unused free fate` : "");
+
+    let failHTML = "";
+    if (res.failed && res.failed.round <= MAX_ROUNDS) {
+      const alts = ev.currencies
+        .map((c) => `${Math.ceil(res.failed.missing / c.value)}× ${esc(c.label)}`)
+        .join(" or ");
+      failHTML = `<p class="hint" style="margin:6px 0 0;color:var(--danger)">
+        Round ${res.failed.round} isn't completable — you'd stall at ${res.failed.points.toLocaleString()} points,
+        ${res.failed.missing.toLocaleString()} short (≈ ${alts}). Nothing is spent on it; the leftovers below stay yours.</p>`;
+    }
+
+    box.innerHTML = `
+      <div class="ev-verdict ${res.rounds.length ? "" : "none"}">
+        ${res.rounds.length}/${MAX_ROUNDS} rounds completable
+        ${res.freeGained ? `<span class="hint" style="margin:0"> · ${res.freeGained} free fate summons collected (${ev.freebieLabel} per milestone)</span>` : ""}
+      </div>
+      ${roundRows ? `<div class="tbl-wrap" style="margin-top:6px"><table class="dt">
+        <thead><tr><th></th><th>Spend</th><th class="center">Points</th></tr></thead>
+        <tbody>${roundRows}</tbody></table></div>` : ""}
+      ${failHTML}
+      <p class="hint" style="margin:6px 0 0">Left over after the ${res.rounds.length ? "completed rounds" : "event"}: ${leftovers}</p>`;
+  }
+
+  function paintAll() { EVENTS.forEach(paintResult); }
+
+  const persist = debounce(async () => {
+    await saveEvents(state);
+    toast("Event stock saved");
+  }, 600);
+
+  el.addEventListener("input", (e) => {
+    if (e.target.matches(".ev-input")) {
+      const st = state[e.target.dataset.ev];
+      st.owned[e.target.dataset.cur] = Math.max(0, parseInt(e.target.value, 10) || 0);
+    } else if (e.target.matches(".ev-start")) {
+      const st = state[e.target.dataset.ev];
+      st.startPoints = Math.max(0, Math.min(ROUND_POINTS - 1, parseInt(e.target.value, 10) || 0));
+    } else {
+      return;
+    }
+    paintResult(EVENTS.find((ev) => ev.id === e.target.dataset.ev));
+    persist();
+  });
+
+  el.addEventListener("click", (e) => {
+    const pref = e.target.closest("[data-pref]");
+    if (!pref) return;
+    const [id, val] = pref.dataset.pref.split(":");
+    state[id].fateFirst = val === "1";
+    const card = el.querySelector(`[data-ev-card="${id}"]`);
+    card.querySelectorAll("[data-pref]").forEach((b) =>
+      b.classList.toggle("on", b === pref));
+    paintResult(EVENTS.find((ev) => ev.id === id));
+    persist();
+  });
+
+  paintAll();
+}
+
+renderEvents(document.getElementById("view"));
+</script>
+</body>
+</html>
